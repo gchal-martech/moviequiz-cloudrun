@@ -289,6 +289,7 @@ def generate_overlay_from_leonardo(prompt: str, output_path: str) -> str:
 # =========================
 
 @app.route("/generate-quiz", methods=["POST"])
+@app.route("/generate-quiz", methods=["POST"])
 def generate_quiz_endpoint():
     """
     POST JSON:
@@ -297,8 +298,21 @@ def generate_quiz_endpoint():
       "language": "greek"
     }
     """
+    # Διαβάζουμε τα keys από τα env vars κάθε φορά, για σιγουριά
+    global OPENAI_API_KEY, LEONARDO_API_KEY
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+    LEONARDO_API_KEY = os.environ.get("LEONARDO_API_KEY")
+
+    # Αν λείπουν, μην κόβεις τη ροή – απλά κάνε log.
     if not OPENAI_API_KEY or not LEONARDO_API_KEY:
-        return jsonify({"error": "Missing OPENAI_API_KEY or LEONARDO_API_KEY env vars"}), 500
+        print(
+            "⚠️ API keys check:",
+            {
+                "has_openai": bool(OPENAI_API_KEY),
+                "has_leonardo": bool(LEONARDO_API_KEY),
+            },
+        )
+        # συνεχίζουμε – OpenAI/Leonardo θα επιστρέψουν πιο συγκεκριμένο error
 
     data = request.get_json(silent=True) or {}
     topic = data.get("topic", "Χριστουγεννιάτικες ταινίες")
@@ -334,6 +348,7 @@ def generate_quiz_endpoint():
     except Exception as e:
         print("❌ Error:", e)
         return jsonify({"error": str(e)}), 500
+
 
 
 if __name__ == "__main__":
