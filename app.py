@@ -4,12 +4,21 @@ import json
 import textwrap
 import base64
 import requests
+
+#For Image storage
+from google.cloud import storage
+import uuid
+#
+
 from flask import Flask, request, jsonify
 from PIL import Image, ImageDraw, ImageFont
 
 # =========================
 # CONFIG
 # =========================
+
+#add the storage bucket name
+GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", "moviequiz-images")
 
 OPENAI_API_KEY = os.environ.get("euF6_LSTuLogImccSsJWejMN7bClY7dOduXJtzUGNLxk2AkVHDmnZT3BlbkFJ_yUXawTsxG9q_jdC5mefZzaGLuCLhR1k5nIWhemT8cnOsq7_arnZ6pGOatTMZalf3i8y9USK4A")
 LEONARDO_API_KEY = os.environ.get("0042aded-1bbc-4a65-bcf8-4d80703c5df8")
@@ -145,6 +154,19 @@ def make_quiz_image(template_path, overlay_path, question, options, output_path)
 
     base.convert("RGB").save(output_path, format="PNG")
     return output_path
+
+#Helper to upload to google storage#
+def upload_to_gcs(local_path, bucket_name=GCS_BUCKET_NAME):
+    
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+
+    file_id = f"{uuid.uuid4()}.png"
+    blob = bucket.blob(f"quiz_posts/{file_id}")
+    blob.upload_from_filename(local_path)
+    blob.make_public()
+
+    return blob.public_url
 
 
 # =========================
@@ -328,22 +350,21 @@ def generate_quiz_endpoint():
         overlay_path = "/tmp/overlay_auto.jpg"
         generate_overlay_from_leonardo(leonardo_prompt, overlay_path)
 
-        final_path = f"/tmp/quiz_post.png"
-        make_quiz_image(TEMPLATE_PATH, overlay_path, question, options, final_path)
+      final_path = "/tmp/quiz_post.png"
+make_quiz_image(TEMPLATE_PATH, overlay_path, question, options, final_path)
 
-        with open(final_path, "rb") as f:
-            img_bytes = f.read()
-        img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+image_url = upload_to_gcs(final_path)
 
-        return jsonify({
-            "topic": topic,
-            "language": language,
-            "question": question,
-            "options": options,
-            "caption_line": caption_line,
-            "leonardo_prompt": leonardo_prompt,
-            "image_base64": img_b64,
-        })
+return jsonify({
+    "topic": topic,
+    "language": language,
+    "question": question,
+    "options": options,
+    "caption_line": caption_line,
+    "leonardo_prompt": leonardo_prompt,
+    "image_url": image_url
+})
+})
 
     except Exception as e:
         print("❌ Error:", e)
