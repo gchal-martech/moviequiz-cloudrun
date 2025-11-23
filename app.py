@@ -350,21 +350,20 @@ def generate_quiz_endpoint():
         overlay_path = "/tmp/overlay_auto.jpg"
         generate_overlay_from_leonardo(leonardo_prompt, overlay_path)
 
-      final_path = "/tmp/quiz_post.png"
-make_quiz_image(TEMPLATE_PATH, overlay_path, question, options, final_path)
+        final_path = "/tmp/quiz_post.png"
+        make_quiz_image(TEMPLATE_PATH, overlay_path, question, options, final_path)
 
-image_url = upload_to_gcs(final_path)
+        image_url = upload_to_gcs(final_path)
 
-return jsonify({
-    "topic": topic,
-    "language": language,
-    "question": question,
-    "options": options,
-    "caption_line": caption_line,
-    "leonardo_prompt": leonardo_prompt,
-    "image_url": image_url
-})
-})
+        return jsonify({
+            "topic": topic,
+            "language": language,
+            "question": question,
+            "options": options,
+            "caption_line": caption_line,
+            "leonardo_prompt": leonardo_prompt,
+            "image_url": image_url
+        })
 
     except Exception as e:
         print("❌ Error:", e)
