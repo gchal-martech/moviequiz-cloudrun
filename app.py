@@ -360,7 +360,7 @@ def generate_quiz_endpoint():
         final_path = "/tmp/quiz_post.png"
         make_quiz_image(TEMPLATE_PATH, overlay_path, question, options, final_path)
 
-        image_url = upload_to_gcs(final_path)
+        image_url = upload_to_gcs(final_path, gsc_key)
 
         return jsonify({
             "topic": topic,
