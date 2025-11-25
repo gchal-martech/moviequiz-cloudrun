@@ -156,32 +156,17 @@ def make_quiz_image(template_path, overlay_path, question, options, output_path)
     return output_path
 
 #Helper to upload to google storage#
-from google.cloud import storage
-
-final_path = "/tmp/quiz_post.png"
-make_quiz_image(TEMPLATE_PATH, overlay_path, question, options, final_path)
-safe_topic = topic.replace(" ", "_").replace("/", "_")
-
-gcs_key = f"quiz_posts/quiz_post_{safe_topic}.png"
-image_url = upload_to_gcs(final_path, gcs_key)
-
-
-def upload_to_gcs(local_path: str, dest_blob_name: str) -> str:
-    """
-    Ανεβάζει το αρχείο στο GCS bucket και επιστρέφει το public URL.
-    Δεν χρησιμοποιεί ACL (που απαγορεύονται με uniform bucket-level access).
-    """
+def upload_to_gcs(local_path, bucket_name=GCS_BUCKET_NAME):
+    
     client = storage.Client()
-    bucket = client.bucket(GCS_BUCKET)
-    blob = bucket.blob(dest_blob_name)
+    bucket = client.bucket(bucket_name)
 
-    # ανεβάζουμε το αρχείο
+    file_id = f"{uuid.uuid4()}.png"
+    blob = bucket.blob(f"quiz_posts/{file_id}")
     blob.upload_from_filename(local_path)
+    blob.make_public()
 
-    # ΔΕΝ κάνουμε make_public() -> δεν ακουμπάμε ACL
-    # Αν το bucket είναι public μέσω IAM, αυτό το URL θα δουλεύει κανονικά.
-    return f"https://storage.googleapis.com/{bucket.name}/{blob.name}"
-
+    return blob.public_url
 
 
 # =========================
@@ -368,7 +353,7 @@ def generate_quiz_endpoint():
         final_path = "/tmp/quiz_post.png"
         make_quiz_image(TEMPLATE_PATH, overlay_path, question, options, final_path)
 
-        image_url = upload_to_gcs(final_path, gcs_key)
+        image_url = upload_to_gcs(final_path)
 
         return jsonify({
             "topic": topic,
