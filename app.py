@@ -158,6 +158,14 @@ def make_quiz_image(template_path, overlay_path, question, options, output_path)
 #Helper to upload to google storage#
 from google.cloud import storage
 
+final_path = "/tmp/quiz_post.png"
+make_quiz_image(TEMPLATE_PATH, overlay_path, question, options, final_path)
+safe_topic = topic.replace(" ", "_").replace("/", "_")
+
+gcs_key = f"quiz_posts/quiz_post_{safe_topic}.png"
+image_url = upload_to_gcs(final_path, gcs_key)
+
+
 def upload_to_gcs(local_path: str, dest_blob_name: str) -> str:
     """
     Ανεβάζει το αρχείο στο GCS bucket και επιστρέφει το public URL.
@@ -360,7 +368,7 @@ def generate_quiz_endpoint():
         final_path = "/tmp/quiz_post.png"
         make_quiz_image(TEMPLATE_PATH, overlay_path, question, options, final_path)
 
-        image_url = upload_to_gcs(final_path, gsc_key)
+        image_url = upload_to_gcs(final_path, gcs_key)
 
         return jsonify({
             "topic": topic,
